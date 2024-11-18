@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tool Office</title>
+  <style>
+    .login-form {
+      width: 300px;
+      margin: 0 auto;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      background-color: #f2f2f2;
+      text-align: center
+    }
+    .form-group {
+      margin-bottom: 15px
+    }
+    .form-group textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 3px
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 700
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 3px
+    }
+    button {
+      background-color: #4caf50;
+      color: #fff;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      margin-bottom: 15px
+    }
+  </style>
+</head>
+<body>
+  <div style=" width: 800px; margin: 0 auto; ">
+    <div class="form-group">
+      <label for="specialChar">specialChar:</label>
+      <input type="text" id="specialChar" name="specialChar">
+    </div>
+    <div class="form-group">
+      <label for="inputText">Input text:</label>
+      <textarea id="inputText" rows="10" placeholder="Convert to bold text"></textarea>
+    </div>
+    <button id="replace">Replace Text</button>
+    <div id="boldedText">
+      <label>Result boldedText:</label>
+      <div id="boldedText"></div>
+    </div>
+    <div class="form-group">
+      <label for="originalText">originalText:</label>
+      <textarea id="originalText" name="note" rows="10"></textarea>
+    </div>
+    <div class="form-group">
+      <label for="specialChar">originalText && specialChar:</label>
+      <pre id="result"></pre>
+    </div>
+  </div>
+  <script>
+    function addSpecialCharToLines(text, specialChar) {
+      const lines = text.split('\n');
+      var modifiedLines = lines.map(line => specialChar + " " + line.trim());
+      modifiedLines = modifiedLines.filter(function (el) {
+        return el != specialChar + " ";
+      });
+      var modifiedText = modifiedLines.join('\n');
+      return modifiedText;
+    }
+    document.getElementById("originalText").addEventListener("input", function () {
+      var originalText = document.getElementById("originalText").value;
+      var result = document.getElementById("result");
+      var specialChar = document.getElementById("specialChar").value;
+      if (specialChar == "") {
+        specialChar = "▪️";
+      }
+      const modifiedText = addSpecialCharToLines(originalText, specialChar);
+      result.innerText = modifiedText;
+    });
+    document.getElementById("inputText").addEventListener("input", function () {
+      convertText();
+    });
+    async function loadBoldMap() {
+      const boldMap = { "A": "𝗔", "B": "𝗕", "C": "𝗖", "D": "𝗗", "E": "𝗘", "F": "𝗙", "G": "𝗚", "H": "𝗛", "I": "𝗜", "J": "𝗝", "K": "𝗞", "L": "𝗟", "M": "𝗠", "N": "𝗡", "O": "𝗢", "P": "𝗣", "Q": "𝗤", "R": "𝗥", "S": "𝗦", "T": "𝗧", "U": "𝗨", "V": "𝗩", "W": "𝗪", "X": "𝗫", "Y": "𝗬", "Z": "𝗭", "a": "𝗮", "b": "𝗯", "c": "𝗰", "d": "𝗱", "e": "𝗲", "f": "𝗳", "g": "𝗴", "h": "𝗵", "i": "𝗶", "j": "𝗷", "k": "𝗸", "l": "𝗹", "m": "𝗺", "n": "𝗻", "o": "𝗼", "p": "𝗽", "q": "𝗾", "r": "𝗿", "s": "𝘀", "t": "𝘁", "u": "𝘂", "v": "𝘃", "w": "𝘄", "x": "𝘅", "y": "𝘆", "z": "𝘇", "ą": "𝗮̨", "ć": "𝗰́", "ę": "𝗲̨", "ł": "𝗹", "ń": "𝗻́", "ó": "𝗼́", "ś": "𝘀́", "ź": "𝘇́", "ż": "𝘇̇", "Ą": "𝗔̨", "Ć": "𝗖́", "Ę": "𝗘̨", "Ł": "𝗟", "Ń": "𝗡́", "Ó": "𝗢́", "Ś": "𝗦́", "Ź": "𝗭́", "Ż": "𝗭̇" };
+      return boldMap;
+    }
+    async function convertText() {
+      const inputText = document.getElementById('inputText').value;
+      const boldMap = await loadBoldMap();
+      let boldedText = '';
+      for (let char of inputText) {
+        boldedText += boldMap[char] || char;
+      }
+      document.getElementById('boldedText').textContent = boldedText;
+    }
+    document.getElementById("replace").addEventListener("click", function () {
+      var originalText = document.getElementById("originalText").value;
+      const lines = originalText.split('\n');
+      var modifiedLines = lines.map(line => line.trim());
+      var inputText = document.getElementById('inputText').value;
+      var boldedText = document.getElementById('boldedText').textContent;
+      if (inputText.trim() != "") {
+        modifiedLines.forEach((element, index) => {
+          if (element === inputText.trim()) {
+            array[index] = boldedText.trim();
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>
