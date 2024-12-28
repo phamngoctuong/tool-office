@@ -1,520 +1,187 @@
-# next-i18next
-
-[![CircleCI](https://circleci.com/gh/i18next/next-i18next.svg?style=shield)](https://circleci.com/gh/i18next/next-i18next)
-[![Package Quality](https://npm.packagequality.com/shield/next-i18next.svg)](https://packagequality.com/#?package=next-i18next)
-[![npm version](https://img.shields.io/npm/v/next-i18next.svg?style=flat-square)](https://www.npmjs.com/package/next-i18next)
-![npm](https://img.shields.io/npm/dw/next-i18next)
-
-**The easiest way to translate your Next.js apps *(with pages setup)*.**
-
-If you are using next-i18next *(pages directory)* in production and like to unleash some super powers, you may have a look at [this blog post](https://locize.com/blog/next-i18next/).
-[![](https://locize.com/blog/next-i18next/next-i18next.jpg)](https://locize.com/blog/next-i18next/)
-
-If you're using Next.js 13/14 with app directory, there is no need for next-i18next, you can directly use i18next and react-i18next, like described [in this blog post](https://locize.com/blog/next-app-dir-i18n/).
-[![](https://locize.com/blog/next-app-dir-i18n/next-app-dir-i18n.jpg)](https://locize.com/blog/next-app-dir-i18n/)
-
-## What is this?
-
-Although Next.js [provides internationalised routing directly](https://nextjs.org/docs/advanced-features/i18n-routing), it does not handle any management of translation content, or the actual translation functionality itself. All Next.js does is keep your locales and URLs in sync.
-
-To complement this, `next-i18next` provides the remaining functionality – management of translation content, and components/hooks to translate your React components – while fully supporting SSG/SSR, multiple [namespaces](https://www.i18next.com/principles/namespaces), codesplitting, etc.
-
-While `next-i18next` uses [i18next](https://www.i18next.com/) and [react-i18next](https://github.com/i18next/react-i18next) under the hood, users of `next-i18next` simply need to include their translation content as JSON files and don't have to worry about much else.
-
-A live demo is [available here](https://next.i18next.com/). This demo app is the [simple example](./examples/simple/) - nothing more, nothing less.
-
-## Why next-i18next?
-
-Easy to set up, easy to use: setup only takes a few steps, and configuration is simple.
-
-No other requirements: `next-i18next` simplifies internationalisation for your [Next.js](https://nextjs.org/) app without extra dependencies.
-
-Production ready: `next-i18next` supports passing translations and configuration options into pages as props with SSG/SSR support.
-
-## How does it work?
-
-Your `next-i18next.config.js` file will provide configuration for `next-i18next`.
-After configuration, `appWithTranslation` allows us to use the `t` (translate) function in our components via hooks.
-
-Then we add `serverSideTranslation` to [getStaticProps](https://nextjs.org/docs/basic-features/data-fetching#getstaticprops-static-generation) or [getServerSideProps](https://nextjs.org/docs/basic-features/data-fetching#getserversideprops-server-side-rendering) (depending on your case) in our page-level components.
-
-Now our Next.js app is fully translatable!
-
-## Setup
-
-### 1. Installation
-
-```bash
-yarn add next-i18next react-i18next i18next
-```
-
-You need to also have `react` and `next` installed.
-
-### 2. Translation content
-
-By default, `next-i18next` expects your translations to be organised as such:
-
-```
-.
-└── public
-    └── locales
-        ├── en
-        |   └── common.json
-        └── de
-            └── common.json
-```
-
-This structure can also be seen in the [simple example](./examples/simple).
-
-If you want to structure your translations/namespaces in a custom way, you will need to pass modified `localePath` and `localeStructure` values into the initialisation config.
-
-### 3. Project setup
-
-First, create a `next-i18next.config.js` file in the root of your project. The syntax for the nested `i18n` object [comes from Next.js directly](https://nextjs.org/docs/advanced-features/i18n-routing).
-
-This tells `next-i18next` what your `defaultLocale` and other locales are, so that it can preload translations on the server:
-
-#### `next-i18next.config.js`
-
-```js
-/** @type {import('next-i18next').UserConfig} */
-module.exports = {
-  i18n: {
-    defaultLocale: 'en',
-    locales: ['en', 'de'],
-  },
-}
-```
-
-Now, create or modify your `next.config.js` file, by passing the `i18n` object into your `next.config.js` file, to enable localised URL routing:
-
-#### [`next.config.js`](https://nextjs.org/docs/api-reference/next.config.js/introduction)
-
-```js
-const { i18n } = require('./next-i18next.config')
-
-module.exports = {
-  i18n,
-}
-```
-
-There are three functions that `next-i18next` exports, which you will need to use to translate your project:
-
-#### appWithTranslation
-
-This is a HOC which wraps your [`_app`](https://nextjs.org/docs/advanced-features/custom-app):
-
-```tsx
-import { appWithTranslation } from 'next-i18next'
-
-const MyApp = ({ Component, pageProps }) => (
-  <Component {...pageProps} />
-)
-
-export default appWithTranslation(MyApp)
-```
-
-The `appWithTranslation` HOC is primarily responsible for adding a [`I18nextProvider`](https://react.i18next.com/latest/i18nextprovider).
-
-#### serverSideTranslations
-
-This is an async function that you need to include on your page-level components, via either [`getStaticProps`](https://nextjs.org/docs/basic-features/data-fetching#getstaticprops-static-generation) or [`getServerSideProps`](https://nextjs.org/docs/basic-features/data-fetching#getserversideprops-server-side-rendering) (depending on your use case):
-
-```tsx
-import { serverSideTranslations } from 'next-i18next/serverSideTranslations'
-
-export async function getStaticProps({ locale }) {
-  return {
-    props: {
-      ...(await serverSideTranslations(locale, [
-        'common',
-        'footer',
-      ])),
-      // Will be passed to the page component as props
-    },
-  }
-}
-```
-
-Note that `serverSideTranslations` must be imported from `next-i18next/serverSideTranslations` – this is a separate module that contains NodeJs-specific code.
-
-Also, note that `serverSideTranslations` is not compatible with `getInitialProps`, as it _only_ can execute in a server environment, whereas `getInitialProps` is called on the client side when navigating between pages.
-
-The `serverSideTranslations` HOC is primarily responsible for passing translations and configuration options into pages, as props – you need to add it to any page that has translations.
-
-### useTranslation
-
-This is the hook which you'll actually use to do the translation itself. The `useTranslation` hook [comes from `react-i18next`](https://react.i18next.com/latest/usetranslation-hook), but needs to be imported from `next-i18next` directly.
-<br/>
-**Do NOT use the `useTranslation` export of `react-i18next`, but ONLY use the one from `next-i18next`!**
-
-```tsx
-import { useTranslation } from 'next-i18next'
-
-export const Footer = () => {
-  const { t } = useTranslation('footer')
-
-  return (
-    <footer>
-      <p>{t('description')}</p>
-    </footer>
-  )
-}
-```
-
-### 4. Declaring namespace dependencies
-
-By default, `next-i18next` will send _all your namespaces_ down to the client on each initial request. This can be an appropriate approach for smaller apps with less content, but a lot of apps will benefit from splitting namespaces based on route.
-
-To do that, you can pass an array of required namespaces for each page into `serverSideTranslations`. You can see this approach in [examples/simple/pages/index.tsx](./examples/simple/pages/index.tsx). Passing in an empty array of required namespaces will send no namespaces.
-
-Note: `useTranslation` provides namespaces to the component that you use it in. However, `serverSideTranslations` provides the total available namespaces to the entire React tree and belongs on the page level. Both are required.
-
-### 5. Declaring locale dependencies
-
-By default, `next-i18next` will send _only the active locale_ down to the client on each request. This helps reduce the size of the
-initial payload sent to the client. However in some cases one may need the translations for other languages at runtime too. For example
-when using [getFixedT](https://www.i18next.com/overview/api#getfixedt) of `useTranslation` hook.
-
-To change the behavior and load extra locales just pass in an array of locales as the last argument to `serverSideTranslations`.
-
-```diff
-  import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
-
-  export async function getStaticProps({ locale }) {
-    return {
-      props: {
--       ...(await serverSideTranslations(locale, ['common', 'footer'])),
-+       ...(await serverSideTranslations(locale, ['common', 'footer'], null, ['en', 'no'])),
-      },
-    };
-  }
-```
-
-As a result the translations for both `no` and `en` locales will always be loaded regardless of the current language.
-
-> Note: The extra argument should be added to all pages that use `getFixedT` function.
-
-#### Fallback locales
-
-By default, `next-i18next` will add the `defaultLocale` as fallback. To change this, you can set [`fallbackLng`](https://www.i18next.com/principles/fallback). All values supported by `i18next` (`string`, `array`, `object` and `function`) are supported by `next-i18next` too.
-
-Additionally `nonExplicitSupportedLngs` can be set to `true` to support all variants of a language, without the need to provide JSON files for each of them. Notice that all variants still must be included in `locales` to enable routing within `next.js`.
-
-> Note: `fallbackLng` and `nonExplicitSupportedLngs` can be used at once. There is only one exception: You can not use a function for `fallbackLng` when `nonExplicitSupportedLngs` is `true`,
-
-```js
-module.exports = {
-  i18n: {
-    defaultLocale: 'en',
-    locales: ['en', 'fr', 'de-AT', 'de-DE', 'de-CH'],
-  },
-  fallbackLng: {
-    default: ['en'],
-    'de-CH': ['fr'],
-  },
-  nonExplicitSupportedLngs: true,
-  // de, fr and en will be loaded as fallback languages for de-CH
-}
-```
-
-Be aware that using `fallbackLng` and `nonExplicitSupportedLngs` can easily increase the initial size of the page.
-
-fyi: Setting `fallbackLng` to `false` will NOT serialize your fallback language (usually `defaultLocale`). This will decrease the size of your initial page load.
-
-### 6. Advanced configuration
-
-#### Passing other config options
-
-If you need to modify more advanced configuration options, you can pass them via `next-i18next.config.js`. For example:
-
-```js
-module.exports = {
-  i18n: {
-    defaultLocale: 'en',
-    locales: ['en', 'de'],
-  },
-  localePath:
-    typeof window === 'undefined'
-      ? require('path').resolve('./my-custom/path')
-      : '/public/my-custom/path',
-  ns: ['common'],
-}
-```
-
-#### Unserializable configs
-
-Some `i18next` plugins (which you can pass into `config.use`) are unserializable, as they contain functions and other JavaScript primitives.
-
-You may run into this if your use case is more advanced. You'll see Next.js throw an error like:
-
-```
-Error: Error serializing `._nextI18Next.userConfig.use[0].process` returned from `getStaticProps` in "/my-page".
-Reason: `function` cannot be serialized as JSON. Please only return JSON serializable data types.
-```
-
-To fix this, you'll need to set `config.serializeConfig` to `false`, and manually pass your config into `appWithTranslation`:
-
-```tsx
-import { appWithTranslation } from 'next-i18next'
-import nextI18NextConfig from '../next-i18next.config.js'
-
-const MyApp = ({ Component, pageProps }) => (
-  <Component {...pageProps} />
-)
-
-export default appWithTranslation(MyApp, nextI18NextConfig)
-```
-
-```tsx
-import { serverSideTranslations } from 'next-i18next/serverSideTranslations'
-
-import nextI18NextConfig from '../next-i18next.config.js'
-
-export const getStaticProps = async ({ locale }) => ({
-  props: {
-    ...(await serverSideTranslations(
-      locale,
-      ['common', 'footer'],
-      nextI18NextConfig
-    )),
-  },
-})
-```
-
-#### Usage with fallback SSG pages 
-
-When using on server-side generated pages with [`getStaticPaths`](https://nextjs.org/docs/pages/api-reference/functions/get-static-paths) and [`fallback: true`](https://nextjs.org/docs/pages/api-reference/functions/get-static-paths#fallback-true) or [`fallback: 'blocking'`](https://nextjs.org/docs/pages/api-reference/functions/get-static-paths#fallback-blocking), the default setup indicated above will cause the app to be unmounted and remounted on every load, causing various adverse consequences like calling every `useEffect(() => {...}, [])` hook twice and slight performance degradation.
-
-This is due to the fact that, for those pages, Next.js does a first render with empty `serverSideProps` and then a second render with the `serverSideProps` that include the `next-i18next` translations. With the default setup, the `i18n` instance is initially `undefined` when `serverSideProps` is `empty`, causing the unmount-remount.
-
-To mitigate this issue, you can do the following:
-
-```tsx
-import { UserConfig } from 'next-i18next';
-import nextI18NextConfig from '../next-i18next.config.js'
-
-const emptyInitialI18NextConfig: UserConfig = {
-  i18n: {
-    defaultLocale: nextI18NextConfig.i18n.defaultLocale,
-    locales: nextI18NextConfig.i18n.locales,
-  },
-};
-
-const MyApp = ({ Component, pageProps }) => (
-  <Component {...pageProps} />
-)
-
-export default appWithTranslation(MyApp, emptyInitialI18NextConfig) // Makes sure the initial i18n instance is not undefined
-```
-
-This will work as long as you make sure that, in the fallback page state, your client-side code is not trying to display any translation since otherwise you will get a "server-client mismatch" error from Next.js (due to the fact that the server has an actual translation in its html while the client html has the translation key in the same place).   
-This is normal and fine: you shouldn't be displaying a translation key to your user anyway!
-
-#### Client side loading of translations via HTTP
-
-Since [v11.0.0](https://github.com/i18next/next-i18next/releases/tag/v11.0.0) next-i18next also provides support for client side loading of translations.
-
-In some use cases, you might want to load a translation file dynamically without having to use `serverSideTranslations`. This can be especially useful for lazy-loaded components that you don't want slowing down pages.
-
-More information about that can be found [here](https://github.com/i18next/i18next-http-backend/tree/master/example/next).
-
-#### Reloading Resources in Development
-
-Because resources are loaded once when the server is started, any changes made to your translation JSON files in development will not be loaded until the server is restarted.
-
-In production this does not tend to be an issue, but in development you may want to see updates to your translation JSON files without having to restart your development server each time. To do this, set the `reloadOnPrerender` config option to `true`.
-
-This option will reload your translations whenever `serverSideTranslations` is called (in `getStaticProps` or `getServerSideProps`). If you are using `serverSideTranslations` in `getServerSideProps`, it is recommended to disable `reloadOnPrerender` in production environments as to avoid reloading resources on each server call.
-
-#### Options
-
-| Key                 | Default value        | Note                                                           |
-| ------------------- | -------------------- | -------------------------------------------------------------- |
-| `defaultNS`         | `'common'`           |                                                                |
-| `localePath`        | `'./public/locales'` | Can be a function, see note below. (can also be null, if passing resources option directly via config, like [here](https://www.i18next.com/how-to/add-or-load-translations#add-on-init))                            |
-| `localeExtension`   | `'json'`             | Ignored if `localePath` is a function.                         |
-| `localeStructure`   | `'{{lng}}/{{ns}}'`   | Ignored if `localePath` is a function.                         |
-| `reloadOnPrerender` | `false`              |                                                                |
-| `serializeConfig`   | `true`               |                                                                |
-| `use` (for plugins) | `[]`                 |                                                                |
-| `onPreInitI18next`  | `undefined`          | i.e. `(i18n) => i18n.on('failedLoading', handleFailedLoading)` |
-
-`localePath` as a function is of the form `(locale: string, namespace: string, missing: boolean) => string` returning the entire path including filename and extension. When `missing` is true, return the path for the `addPath` option of `i18next-fs-backend`, when false, return the path for the `loadPath` option. [More info at the `i18next-fs-backend` repo.](https://github.com/i18next/i18next-fs-backend/tree/master#backend-options)
-<br />
-If the localePath is a function, make sure you also define the ns option, because on server side we're not able to preload the namespaces then.
-
-All other [i18next options](https://www.i18next.com/overview/configuration-options) and [react-i18next options](https://react.i18next.com/latest/i18next-instance) can be passed in as well.
-</br>
-You can also pass in the [`resources`](https://www.i18next.com/overview/configuration-options#languages-namespaces-resources) directly in combination with setting `localePath` to `null`.
-
-#### Custom interpolation prefix/suffix
-
-By default, i18next uses `{{` as prefix and `}}` as suffix for [interpolation](https://www.i18next.com/translation-function/interpolation).
-If you want/need to override these interpolation settings, you **must** also specify an alternative `localeStructure` setting that matches your custom prefix and suffix.
-
-For example, if you want to use `{` and `}` the config would look like this:
-
-```js
-{
-  i18n: {
-    defaultLocale: 'en',
-    locales: ['en', 'nl'],
-  },
-  interpolation: {
-    prefix: '{',
-    suffix: '}',
-  },
-  localeStructure: '{lng}/{ns}',
-}
-```
-
-#### Custom `next-i18next.config.js` path
-
-If you want to change the default config path, you can set the environment variable `I18NEXT_DEFAULT_CONFIG_PATH`.
-
-For example, inside the `.env` file you can set a static path:
-
-```
-I18NEXT_DEFAULT_CONFIG_PATH=/path/to/project/apps/my-app/next-i18next.config.js
-```
-
-Or you can use a trick for dynamic path and set the following inside `next.config.js`:
-
-```js
-process.env.I18NEXT_DEFAULT_CONFIG_PATH = `${__dirname}/next-i18next.config.js`;
-
-// ... Some other imports
-
-const { i18n } = require('./next-i18next.config');
-
-// ... Some other code
-
-module.exports = {
-  i18n,
-  ...
-};
-```
-
-This means that the i18n configuration file will be in the same directory as `next.config.js` and it doesn't matter where your current working directory is. This helps for example for `nx` when you have monorepo and start your application from project root but the application is in `apps/{appName}`.
-
-**Notice** If your config `next-i18next.config.js` is not in the same directory as `next.config.js`, you must copy it manually (or by custom script).
-
-#### Adding next-i18next incrementally
-
-If you are planning on incrementally add next-i18next to you project we recommended that you will pass your `next-i18next.config` to `appWithTranslation` to avoid any issues.
-
-i.e
-
-```js
-import nextI18nextConfig from '../../next-i18next.config';
-//...
-export default appWithTranslation(MyApp, nextI18nextConfig);
-```
-
-See Issue [#2259](https://github.com/i18next/next-i18next/issues/2259) for more information.
-
-## Notes
-
-### Vercel and Netlify
-
-Some serverless PaaS may not be able to locate the path of your translations and require additional configuration. If you have filesystem issues using `serverSideTranslations`, set `config.localePath` to use `path.resolve`. An example can be [found here](https://github.com/i18next/next-i18next/issues/1552#issuecomment-1538452722).
-
-### Docker
-
-For Docker deployment, note that if you use the `Dockerfile` from [Next.js docs](https://nextjs.org/docs/deployment#docker-image) do not forget to copy `next.config.js` and `next-i18next.config.js` into the Docker image.
-
-```
-COPY --from=builder /app/next.config.js ./next.config.js
-COPY --from=builder /app/next-i18next.config.js ./next-i18next.config.js
-```
-
-### Asynchronous i18next backends
-
-If you choose to use an i18next backend different to the built-in [i18next-fs-backend](https://github.com/i18next/i18next-fs-backend), you will need to ensure the translation resources are loaded before you call the `t` function.
-Since [React suspense is not yet supported for SSR](https://github.com/i18next/next-i18next/issues/1255), this can be solved in 2 different ways:
-
-**1) Preload the namespaces:**
-
-Set the `ns` option, like in [this example](https://github.com/locize/next-i18next-locize/blob/main/next-i18next.config.js#L48). Doing this will ensure all translation resources are loaded on initialization.
-
-**2) Check the ready flag:**
-
-If you cannot or do not want to provide the `ns` array, calls to the `t` function will cause namespaces to be loaded on the fly. This means you'll need to handle the "not ready" state by checking `ready === true` or `props.tReady === true`. Not doing so will result in rendering your translations before they loaded, which will cause "save missing" be called despite the translations actually existing (just yet not loaded).
-This can be done with the [useTranslation hook](https://react.i18next.com/latest/usetranslation-hook#not-using-suspense) or the [withTranslation HOC](https://react.i18next.com/latest/withtranslation-hoc#not-using-suspense).
-
-### Static HTML Export SSG
-
-Are you trying to generate a [static HTML export](https://nextjs.org/docs/advanced-features/static-html-export) by executing `next export` and are getting this error?
-
-> Error: i18n support is not compatible with next export. See here for more info on deploying: https://nextjs.org/docs/deployment
-
-But there's a way to workaround that with the help of [next-language-detector](https://github.com/i18next/next-language-detector).
-Check out [this blog post](https://locize.com/blog/next-i18n-static/) and [this example project](./examples/ssg/).
-[![](https://locize.com/blog/next-i18n-static/title.jpg)](https://locize.com/blog/next-i18n-static/)
-
-### Translate in child components
-
-You have multiple ways to use the t function in your child component:
-
-1. Pass the `t` function via props down to the children
-2. Pass the translated text via props down to the children, like in this example: https://github.com/i18next/next-i18next/blob/master/examples/simple/components/Header.tsx#L12
-3. Use the [`useTranslation`](https://react.i18next.com/latest/usetranslation-hook) function, like in this example: https://github.com/i18next/next-i18next/blob/e6b5085b5e92004afa9516bd444b19b2c8cf5758/examples/simple/components/Footer.tsx#L6
-4. Use the [`withTranslation`](https://react.i18next.com/latest/withtranslation-hoc) function
-
-_And in general, you always needs to be sure serverSideTranslations contains all namespaces you need in the tree._
-
-## Contributors
-
-Thanks goes to these wonderful people ([emoji key](https://github.com/kentcdodds/all-contributors#emoji-key)):
-
-<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
-<!-- prettier-ignore-start -->
-<!-- markdownlint-disable -->
-<table>
-  <tbody>
-    <tr>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/capellini"><img src="https://avatars3.githubusercontent.com/u/75311?v=4?s=100" width="100px;" alt="Rob Capellini"/><br /><sub><b>Rob Capellini</b></sub></a><br /><a href="https://github.com/i18next/next-i18next/commits?author=capellini" title="Code">💻</a> <a href="https://github.com/i18next/next-i18next/commits?author=capellini" title="Tests">⚠️</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://en.kachkaev.ru"><img src="https://avatars3.githubusercontent.com/u/608862?v=4?s=100" width="100px;" alt="Alexander Kachkaev"/><br /><sub><b>Alexander Kachkaev</b></sub></a><br /><a href="#talk-kachkaev" title="Talks">📢</a> <a href="#question-kachkaev" title="Answering Questions">💬</a> <a href="#ideas-kachkaev" title="Ideas, Planning, & Feedback">🤔</a> <a href="https://github.com/i18next/next-i18next/commits?author=kachkaev" title="Code">💻</a> <a href="https://github.com/i18next/next-i18next/commits?author=kachkaev" title="Tests">⚠️</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://kandelborg.dk"><img src="https://avatars1.githubusercontent.com/u/33042011?v=4?s=100" width="100px;" alt="Mathias Wøbbe"/><br /><sub><b>Mathias Wøbbe</b></sub></a><br /><a href="https://github.com/i18next/next-i18next/commits?author=MathiasKandelborg" title="Code">💻</a> <a href="#ideas-MathiasKandelborg" title="Ideas, Planning, & Feedback">🤔</a> <a href="https://github.com/i18next/next-i18next/commits?author=MathiasKandelborg" title="Tests">⚠️</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="http://lucasfeliciano.com"><img src="https://avatars3.githubusercontent.com/u/968014?v=4?s=100" width="100px;" alt="Lucas Feliciano"/><br /><sub><b>Lucas Feliciano</b></sub></a><br /><a href="#ideas-lucasfeliciano" title="Ideas, Planning, & Feedback">🤔</a> <a href="https://github.com/i18next/next-i18next/pulls?q=is%3Apr+reviewed-by%3Alucasfeliciano" title="Reviewed Pull Requests">👀</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="http://www.fifteenprospects.com"><img src="https://avatars2.githubusercontent.com/u/6932550?v=4?s=100" width="100px;" alt="Ryan Leung"/><br /><sub><b>Ryan Leung</b></sub></a><br /><a href="https://github.com/i18next/next-i18next/commits?author=minocys" title="Code">💻</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="http://nathanfriemel.com"><img src="https://avatars3.githubusercontent.com/u/1325835?v=4?s=100" width="100px;" alt="Nathan Friemel"/><br /><sub><b>Nathan Friemel</b></sub></a><br /><a href="https://github.com/i18next/next-i18next/commits?author=nathanfriemel" title="Code">💻</a> <a href="https://github.com/i18next/next-i18next/commits?author=nathanfriemel" title="Documentation">📖</a> <a href="#example-nathanfriemel" title="Examples">💡</a> <a href="#ideas-nathanfriemel" title="Ideas, Planning, & Feedback">🤔</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://isaachinman.com/"><img src="https://avatars.githubusercontent.com/u/10575782?v=4?s=100" width="100px;" alt="Isaac Hinman"/><br /><sub><b>Isaac Hinman</b></sub></a><br /><a href="#a11y-isaachinman" title="Accessibility">️️️️♿️</a> <a href="#question-isaachinman" title="Answering Questions">💬</a> <a href="#audio-isaachinman" title="Audio">🔊</a> <a href="#blog-isaachinman" title="Blogposts">📝</a> <a href="https://github.com/i18next/next-i18next/issues?q=author%3Aisaachinman" title="Bug reports">🐛</a> <a href="#business-isaachinman" title="Business development">💼</a> <a href="https://github.com/i18next/next-i18next/commits?author=isaachinman" title="Code">💻</a> <a href="#content-isaachinman" title="Content">🖋</a> <a href="#data-isaachinman" title="Data">🔣</a> <a href="#design-isaachinman" title="Design">🎨</a> <a href="https://github.com/i18next/next-i18next/commits?author=isaachinman" title="Documentation">📖</a> <a href="#eventOrganizing-isaachinman" title="Event Organizing">📋</a> <a href="#example-isaachinman" title="Examples">💡</a> <a href="#financial-isaachinman" title="Financial">💵</a> <a href="#fundingFinding-isaachinman" title="Funding Finding">🔍</a> <a href="#ideas-isaachinman" title="Ideas, Planning, & Feedback">🤔</a> <a href="#infra-isaachinman" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a> <a href="#maintenance-isaachinman" title="Maintenance">🚧</a> <a href="#mentoring-isaachinman" title="Mentoring">🧑‍🏫</a> <a href="#platform-isaachinman" title="Packaging/porting to new platform">📦</a> <a href="#plugin-isaachinman" title="Plugin/utility libraries">🔌</a> <a href="#projectManagement-isaachinman" title="Project Management">📆</a> <a href="#research-isaachinman" title="Research">🔬</a> <a href="https://github.com/i18next/next-i18next/pulls?q=is%3Apr+reviewed-by%3Aisaachinman" title="Reviewed Pull Requests">👀</a> <a href="#security-isaachinman" title="Security">🛡️</a> <a href="#talk-isaachinman" title="Talks">📢</a> <a href="https://github.com/i18next/next-i18next/commits?author=isaachinman" title="Tests">⚠️</a> <a href="#tool-isaachinman" title="Tools">🔧</a> <a href="#translation-isaachinman" title="Translation">🌍</a> <a href="#tutorial-isaachinman" title="Tutorials">✅</a> <a href="#userTesting-isaachinman" title="User Testing">📓</a> <a href="#video-isaachinman" title="Videos">📹</a></td>
-    </tr>
-    <tr>
-      <td align="center" valign="top" width="14.28%"><a href="https://locize.com/"><img src="https://avatars.githubusercontent.com/u/1086194?v=4?s=100" width="100px;" alt="Adriano Raiano"/><br /><sub><b>Adriano Raiano</b></sub></a><br /><a href="#a11y-adrai" title="Accessibility">️️️️♿️</a> <a href="#question-adrai" title="Answering Questions">💬</a> <a href="#audio-adrai" title="Audio">🔊</a> <a href="#blog-adrai" title="Blogposts">📝</a> <a href="https://github.com/i18next/next-i18next/issues?q=author%3Aadrai" title="Bug reports">🐛</a> <a href="#business-adrai" title="Business development">💼</a> <a href="https://github.com/i18next/next-i18next/commits?author=adrai" title="Code">💻</a> <a href="#content-adrai" title="Content">🖋</a> <a href="#data-adrai" title="Data">🔣</a> <a href="#design-adrai" title="Design">🎨</a> <a href="https://github.com/i18next/next-i18next/commits?author=adrai" title="Documentation">📖</a> <a href="#eventOrganizing-adrai" title="Event Organizing">📋</a> <a href="#example-adrai" title="Examples">💡</a> <a href="#financial-adrai" title="Financial">💵</a> <a href="#fundingFinding-adrai" title="Funding Finding">🔍</a> <a href="#ideas-adrai" title="Ideas, Planning, & Feedback">🤔</a> <a href="#infra-adrai" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a> <a href="#maintenance-adrai" title="Maintenance">🚧</a> <a href="#mentoring-adrai" title="Mentoring">🧑‍🏫</a> <a href="#platform-adrai" title="Packaging/porting to new platform">📦</a> <a href="#plugin-adrai" title="Plugin/utility libraries">🔌</a> <a href="#projectManagement-adrai" title="Project Management">📆</a> <a href="#research-adrai" title="Research">🔬</a> <a href="https://github.com/i18next/next-i18next/pulls?q=is%3Apr+reviewed-by%3Aadrai" title="Reviewed Pull Requests">👀</a> <a href="#security-adrai" title="Security">🛡️</a> <a href="#talk-adrai" title="Talks">📢</a> <a href="https://github.com/i18next/next-i18next/commits?author=adrai" title="Tests">⚠️</a> <a href="#tool-adrai" title="Tools">🔧</a> <a href="#translation-adrai" title="Translation">🌍</a> <a href="#tutorial-adrai" title="Tutorials">✅</a> <a href="#userTesting-adrai" title="User Testing">📓</a> <a href="#video-adrai" title="Videos">📹</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/felixmosh"><img src="https://avatars.githubusercontent.com/u/9304194?v=4?s=100" width="100px;" alt="Felix Mosheev"/><br /><sub><b>Felix Mosheev</b></sub></a><br /><a href="#question-felixmosh" title="Answering Questions">💬</a> <a href="https://github.com/i18next/next-i18next/commits?author=felixmosh" title="Code">💻</a> <a href="#talk-felixmosh" title="Talks">📢</a> <a href="https://github.com/i18next/next-i18next/commits?author=felixmosh" title="Tests">⚠️</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://soluble.io/pro"><img src="https://avatars.githubusercontent.com/u/259798?v=4?s=100" width="100px;" alt="Sébastien Vanvelthem"/><br /><sub><b>Sébastien Vanvelthem</b></sub></a><br /><a href="https://github.com/i18next/next-i18next/commits?author=belgattitude" title="Code">💻</a> <a href="https://github.com/i18next/next-i18next/commits?author=belgattitude" title="Documentation">📖</a> <a href="#example-belgattitude" title="Examples">💡</a> <a href="#maintenance-belgattitude" title="Maintenance">🚧</a> <a href="#userTesting-belgattitude" title="User Testing">📓</a></td>
-    </tr>
-  </tbody>
-</table>
-
-<!-- markdownlint-restore -->
-<!-- prettier-ignore-end -->
-
-<!-- ALL-CONTRIBUTORS-LIST:END -->
-
-This project follows the [all-contributors](https://github.com/kentcdodds/all-contributors) specification. Contributions of any kind welcome!
-
----
-
-<h3 align="center">Gold Sponsors</h3>
-
-<p align="center">
-  <a href="https://locize.com/" target="_blank">
-    <img src="https://raw.githubusercontent.com/i18next/i18next/master/assets/locize_sponsor_240.gif" width="240px">
-  </a>
-</p>
-
----
-
-**localization as a service - locize.com**
-
-Needing a translation management? Want to edit your translations with an InContext Editor? Use the original provided to you by the maintainers of i18next!
-
-![locize](https://locize.com/img/ads/github_locize.png)
-
-With using [locize](http://locize.com/?utm_source=next_i18next_readme&utm_medium=github) you directly support the future of i18next and next-i18next.
-
----
+<!--
+  Title: Awesome Regex
+  Description: A curated list of amazingly awesome regex resources.
+  Author: aloisdg
+  -->
+# Awesome Regex
+[![Awesome](https://awesome.re/badge.svg)](https://awesome.re)
+[![Main workflow](https://github.com/aloisdg/awesome-regex/workflows/Main%20workflow/badge.svg)](https://github.com/aloisdg/awesome-regex/actions)
+## Introduction
+A curated collection of awesome Regex libraries, tools, frameworks and software. The goal is to build a categorized community-driven collection of very well-known resources.
+Inspired by [awesome-dotnet](https://github.com/quozd/awesome-dotnet), [awesome-ruby](https://github.com/markets/awesome-ruby), [awesome-awesomeness](https://github.com/bayandin/awesome-awesomeness) and the whole `awesome-*` trend on GitHub. Thank you [Reddit](http://www.reddit.com/r/regex), [Hacker News](https://news.ycombinator.com/item?id=9581225) and [Stack Overflow](http://stackoverflow.com/tags/regex/info) for the help.
+Sharing, suggestions and contributions are always welcome! Please take a look at the [contribution guidelines and quality standard](https://github.com/aloisdg/awesome-regex/blob/master/CONTRIBUTING.md) first. Thanks to all contributors, you're awesome and wouldn't be possible without you!
+## Contents
+- [Documentation](#documentation)
+- [Prototyping and Testing](#prototyping-and-testing)
+- [Generators](#generators)
+- [Security](#security)
+- [Learning](#learning)
+- [Libraries](#libraries)
+- [Collections](#collections)
+- [Explanation](#explanation)
+- [Exercises](#exercises)
+- [Articles](#articles)
+- [Books](#books)
+- [Benchmarks](#benchmarks)
+- [Cheat Sheets](#cheat-sheets)
+## Documentation
+- [Regular Expression Language - Quick Reference](https://msdn.microsoft.com/en-us/library/az24scfc(v=vs.110).aspx) - MSDN documentation about Regex.
+- [Regular Expressions](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions) - MDN chapter about JavaScript regular expressions.
+- [Perl Regular Expression Syntax](http://www.boost.org/doc/libs/1_43_0/libs/regex/doc/html/boost_regex/syntax/perl_syntax.html) - Boost documentation.
+- [Perl 6](https://docs.perl6.org/language/regexes) - Regexes in Perl 6.
+- [PCRE](http://pcre.org/pcre.txt) - Concatenated PCRE man pages.
+- [ECMAScript 6](http://2ality.com/2015/07/regexp-es6.html) - New Regexes in ECMAScript 6.
+- [regex header in C++](http://www.cplusplus.com/reference/regex/) - `<regex>` in C++
+- [class Pattern in Java](https://docs.oracle.com/javase/7/docs/api/java/util/regex/Pattern.html) - Java 7 docs.
+- [class Regex in Scala](http://www.scala-lang.org/api/2.12.1/scala/util/matching/Regex.html) - Scala Regex.
+- [Python re module](https://pymotw.com/3/re/) - Regular Expressions Python module tutorial.
+- [Regular Expressions in Perl](http://perl-begin.org/topics/regular-expressions/) - Introduction and Reference Links.
+## Prototyping and Testing
+- [Debuggex](https://www.debuggex.com/) - Online visual Regex tester.
+- [ExtendsClass](https://extendsclass.com/regex-tester.html) - Online visual Regex tester.
+- [Nodexr](https://www.nodexr.net) - Online node-based Regex editor.
+- [Regexr](http://regexr.com/) - Website for interactive Regex prototyping with syntax highlighting (by @gskinner).
+- [Regex101](https://regex101.com/) - Online Regex tester, debugger with highlighting.
+- [Rubular](http://rubular.com/) - Ruby-based regular expression editor and tester.
+- [Rex V](http://www.rexv.org/) - AJAX Regular EXpression eValuator.
+- [RegViz](http://regviz.org/) - Tool for debugging JavaScript regular expressions in a visual way.
+- [Regulex](https://jex.im/regulex) - JavaScript Regular Expression Visualizer.
+- [PyRegex](http://www.pyregex.com/) - Online Regex tester to check validity of Regex in the Python language Regex subset.
+- [pythex](http://pythex.org/) - Quick way to test your Python regular expressions.
+- [Regexper](http://regexper.com/) - Regex visualizer for JavaScript using railroad diagrams.
+- [HiFi Regex Tester](http://www.gethifi.com/tools/regex) - Live JavaScript Regular Expression Tester.
+- [Regex Hero](http://regexhero.net/tester/) - .NET online Regex tester.
+- [Regex Storm](http://regexstorm.net/tester) - .NET Regex tester with highlighting and detailed results output.
+- [RegEx to Strings](https://www.wimpyprogrammer.com/regex-to-strings/) - JavaScript library and online tool to generate strings that a regular expression would match.
+- [RegexPal](http://www.regexpal.com) - JavaScript + PCRE online tester.
+- [RegexTester](http://www.regextester.com) - Regular Expression Tester with highlighting for Javascript and PCRE.
+- [Free Formatter](http://www.freeformatter.com/regex-tester.html) - Free online Regex tester.
+- [Regex Tester - Golang](https://regex-golang.appspot.com/assets/html/index.html) - A secure regular expression tester. built using Go
+- [PHP Live Regex](https://www.phpliveregex.com) - PHP specific regular expression tester with live evaluation and code generation for all PHP's regex functions.
+## Generators
+- [Txt2Re](https://www.txt2re.com/index_php3.html) - Generate Regular expressions based on a string
+- [Regex Generator++](http://regex.inginf.units.it) - Automatic Generation of Text Extraction Patterns from Examples
+- [regexgen](https://github.com/devongovett/regexgen) - Generates regular expressions that match a set of strings.
+- [RegexGenerator](https://github.com/MaLeLabTs/RegexGenerator) - A tool for generating regular expressions for text extraction (by @MaLeLabTs)
+- [Gamon's numberic range generator](http://gamon.webfactional.com/regexnumericrangegenerator/) - Regex Numeric Range Generator, when you need to match an integer range.
+- [rgxg](https://rgxg.github.io) - Command line tool to generate Regex
+- [Strings to RegEx](https://www.wimpyprogrammer.com/strings-to-regex/) - JavaScript library and online tool to generate a regular expression that matches strings.
+- [Regex Guide](https://regex.guide/playground) - Plain Text to Regex Generator.
+- [grex](https://github.com/pemistahl/grex) - A command-line tool and library for generating regular expressions from user-provided test cases.
+- [AutoRegex](https://www.autoregex.xyz/home) - English <-> Regex from an AI.
+## Security
+- [SafeRegex](https://github.com/jkutner/saferegex) - A command-line tool for testing regular expressions for [ReDoS](https://owasp.org/www-community/attacks/Regular_expression_Denial_of_Service_-_ReDoS) vulnerabilities.
+## Learning
+- [Wikipedia][d1] - Entry on regular expressions.
+- [Learn Regex The Hard Way][d2] - In-progress book that quickly teaches you regular expressions.
+- [Regular Expression Matching Can Be Simple And Fast][d3] - Basic concept of how Regex parsing works.
+- [PDF] [A Tao Of Regular Expressions][d4] - What are Regular Expressions.
+- [Regular-Expressions.info][d5] - Informative website for learning regular expressions.
+- [RexEgg][d6] - A regular expressions tutorial that goes deep into advanced features.
+- [Try Regex][d7] - Try Regex is an interactive regular expressions tutorial.
+- [Udemy][d8] - A Basic Introduction To Using Regular Expressions In Programming.
+- [Codecademy][d9] - How to use of regular expression.
+- [Regex golf][d10] - Regex golf with Peter Norvig.
+- [Python Regular Expressions][d11] - A good introduction to Python Regular Expressions from Google.
+- [/Reg(exp){2}lained/: Demystifying Regular Expressions][d12] - Fluent 2012 talk reviewing and visualizing basic and intermediate Regular Expressions.
+- [Regular Expressions - Everything you should know][d13] - PDF Series.
+- [The Java Tutorials][d14]
+- [Regex Syntax Summary][d15]
+- [How Regexes work][d16]
+- [Learn Regular Expressions for Beginners][d17]
+- [Java Regex Tutorial][d18]
+- [Javascript.info - Regular expressions][d19] - Regular expressions section in The Modern JavaScript Tutorial
+- [Useful Regexes][d20]
+- [Teach Yourself Regular Expressions][d21]
+- [Interactive Regex Tutorial][d22] - Learn Regex step by step, from zero to advanced.
+[d1]: http://en.wikipedia.org/wiki/Regular_expression
+[d2]: http://regex.learncodethehardway.org/book/
+[d3]: http://swtch.com/~rsc/regexp/regexp1.html
+[d4]: http://linuxreviews.org/beginner/tao_of_regular_expressions/tao_of_regular_expressions.en.print.pdf
+[d5]: http://www.regular-expressions.info/
+[d6]: http://www.rexegg.com/
+[d7]: http://tryregex.com/
+[d8]: https://www.udemy.com/learning-regular-expressions/
+[d9]: http://www.codecademy.com/courses/javascript-intermediate-en-NJ7Lr/0/1
+[d10]: https://www.oreilly.com/learning/regex-golf-with-peter-norvig
+[d11]: https://developers.google.com/edu/python/regular-expressions
+[d12]: https://www.youtube.com/watch?v=EkluES9Rvak
+[d13]: http://neverfear.org/blog/view/Regex_tutorial_for_people_who_should_know_Regex__but_do_not___Part_1
+[d14]: https://docs.oracle.com/javase/tutorial/essential/regex/resources.html
+[d15]: http://www.greenend.org.uk/rjk/2002/06/regexp.html
+[d16]: http://perl.plover.com/Regex/
+[d17]: https://hackernoon.com/javascript-learn-regular-expressions-for-beginners-bb6107015d91
+[d18]: http://www.vogella.com/tutorials/JavaRegularExpressions/article.html
+[d19]: https://javascript.info/regular-expressions
+[d20]: https://atrilsolutions.zendesk.com/hc/en-us/articles/205539861-Useful-regular-expressions
+[d21]: http://rads.stackoverflow.com/amzn/click/0672325667
+[d22]: https://regexlearn.com/
+## Libraries
+- [Tre](https://laurikari.net/tre/) - Free and portable approximate Regex matching library.
+- [Go-Restructure](https://github.com/alexflint/go-restructure) - Match regular expressions into struct fields in Go (by @alexflint). [js](https://github.com/benjamingr/js-restructure) [C#](https://gist.github.com/benjamingr/4de21494b3e76088e5f7)
+- [js-regex](https://github.com/wyantb/js-regex) - Chainable API for constructing Regexes.
+- [VerbalExpressions](https://github.com/VerbalExpressions) - VerbalExpressions is a cross-language library that helps to construct difficult regular expressions.
+- [Super Expressive](https://github.com/francisrstokes/super-expressive) - Super Expressive is a JavaScript library that allows you to build regular expressions in natural language.
+- [XRegExp](http://xregexp.com) - JavaScript Regex library.
+- [RE2](https://github.com/google/re2) - RE2 is a fast, safe, thread-friendly alternative to backtracking regular expression engines like those used in PCRE, Perl, and Python. It is a C++ library.
+- [Hyperscan](https://github.com/01org/hyperscan) - High-performance multiple Regex matching library.
+## Collections
+- [RegexLib](http://regexlib.com/) - Regular Expression Library (5000+ indexed expressions).
+- [Regexhub](https://projects.lukehaas.me/regexhub/) - Useful Regex Patterns.
+- [RGXP.RU](https://rgxp.ru/) - Regular Expression Patterns (+testing)
+## Explanation
+- [RegexTranslator](https://www.regextranslator.com/) - A web app to decode Regex into plain English. You can edit it and translate back.
+- [Explain.pl](http://rick.measham.id.au/paste/explain.pl) - Explain Regular Expressions.
+## Exercises
+- [HackerRank Regex Challenges](https://www.hackerrank.com/domains/regex/re-introduction) - Regex challenges with varying levels of difficulty.
+- [Redoku](http://padolsey.github.io/redoku/) - Little Regex Sudoku/Crossword thing (by @padolsey).
+- [Regex Tuesday - Challenges](https://github.com/callumacrae/regex-tuesday) - Challenge list about Regex.
+- [Regex Crossword](http://regexcrossword.com) - A crossword puzzle game using regular expressions.
+- [RegexOne](http://regexone.com) - Learn regular expressions with simple, interactive examples.
+- [Regex Exercises](https://regex.sketchengine.co.uk/) - Regexp exercises.
+- [Regular Expression Crossword Puzzle](http://gregable.com/2015/12/regular-expression-crossword-puzzle.html) - A crossword puzzle with a neat web interface.
+## Articles
+- [5 Techniques to Improve Regex Performance](https://www.loggly.com/blog/five-invaluable-techniques-to-improve-regex-performance/) - Craft your own powerful, yet efficient regex.
+- [The Bad, the Better, and the Best](https://www.loggly.com/blog/regexes-the-bad-better-best/) - How a few characters can make a difference in performance.
+- [The Greatest Regex Trick Ever](http://www.rexegg.com/regex-best-trick.html) - So you're doubtful at the mention of a "best Regex trick"?
+- [Treat regular expressions as code, not magic](http://alexwlchan.net/2016/04/regexes-are-code/) - If you don’t write them carefully, you can end up with an unmaintainable monstrosity.
+- [Demystifying The Regular Expression That Checks If A Number Is Prime](https://iluxonchik.github.io/regular-expression-check-if-number-is-prime/) - How a regular expression can check if a number is prime.
+- [Regex Tree: a regular expressions processor](https://medium.com/@DmitrySoshnikov/regexp-tree-a-regular-expressions-parser-with-a-simple-ast-format-bcd4d5580df6)
+- [The thirty minute regex tutorial](https://www.codeproject.com/Articles/9099/The-Minute-Regex-Tutorial) - Regular Expressions in 30 Minutes.
+- [Regular Expression Matching Can Be Simple And Fast](https://swtch.com/~rsc/regexp/regexp1.html)
+- [Regular Expressions in a post ES6 World](https://ponyfoo.com/articles/regular-expressions-post-es6)
+- [Regular expression (regex) performance: The fundamental guide](https://medium.com/@lennartkoopmann/regular-expression-regex-performance-the-fundamental-guide-3d39e6af33af)
+- [The New ‘Absent Operator’ in Ruby’s Regular Expressions](https://medium.com/rubyinside/the-new-absent-operator-in-ruby-s-regular-expressions-7c3ef6cd0b99)
+- [Optimizing regexes in Java](http://www.javaworld.com/article/2077757/core-java/optimizing-regular-expressions-in-java.html)
+- [Use Regex to Test Password Strength in JavaScript](https://dzone.com/articles/use-regex-test-password)
+- [Java 101](http://www.javaworld.com/article/3188545/learn-java/java-101-regular-expressions-in-java-part-1.html) - Regular Expressions in Java.
+- [Most Crazy Regexes](https://stackoverflow.com/questions/800813/what-is-the-most-difficult-challenging-regular-expression-you-have-ever-written) - Stack Overflow
+- [Regex Humor](http://www.rexegg.com/regex-humor.html) - Regex jokes and cartoons.
+- [The true power of regular expressions](https://nikic.github.io/2012/06/15/The-true-power-of-regular-expressions.html)
+- [On code, early neural networks, and once discredited AI pioneers](https://whyisthisinteresting.substack.com/p/the-regular-expression-edition) - A short history of regexes
+## Books
+- [Patterns, Automata, and Regular Expressions](http://infolab.stanford.edu/~ullman/focs/ch10.pdf) - Al Aho and Jeff Ullman (1992) (*chapter 10 of [Foundations of Computer Science](http://infolab.stanford.edu/~ullman/focs.html)*)
+- [Beginning Regular Expressions](http://shop.oreilly.com/product/9780764574894.do) - Andrew Watt (2005)
+- [Mastering Regular Expressions](http://shop.oreilly.com/product/9780596528126.do) - Jeffrey E.F. Friedl (2006)
+- [Regular Expression Pocket Reference](http://shop.oreilly.com/product/9780596514273.do) - Tony Stubblebine (2007)
+- [Introducing Regular Expressions](http://shop.oreilly.com/product/0636920012337.do) - Michael Fitzgerald (2012)
+- [Regular Expressions Cookbook](http://shop.oreilly.com/product/0636920023630.do) - Jan Goyvaerts & Steven Levithan (2012)
+- [Mastering Python Regular Expressions](http://shop.oreilly.com/product/9781783283156.do) - Felix Lopez & Victor Romero (2014)
+- [JavaScript Regular Expressions](http://shop.oreilly.com/product/9781783282258.do) - Loiane Groner & Gabriel Manricks (2015)
+- [Regex - the complete tutorial](https://www.princeton.edu/~mlovett/reference/Regular-Expressions.pdf)
+- [Python re(gex)?](https://github.com/learnbyexample/py_regular_expressions) - Sundeep Agarwal (2020)
+## Benchmarks
+- [Benchmark of Regex Libraries](http://lh3lh3.users.sourceforge.net/reb.shtml)
+- [Java regular expression library benchmarks – 2015](https://www.javaadvent.com/2015/12/java-regular-expression-library-benchmarks-2015.html)
+- [Languages Regex Benchmark](https://github.com/mariomka/regex-benchmark) - It's just a simple Regex benchmark of different programming languages.
+- [Performance comparison of regular expression engines](http://sljit.sourceforge.net/regex_perf.html)
+- [Regex Performance](https://github.com/rust-leipzig/regex-performance) - Performance comparison of regular expression engines.
+## Cheat Sheets
+- [Regular Expressions Cheat Sheet](https://www.cheatography.com/davechild/cheat-sheets/regular-expressions/)
+- [Regex Cheat Sheet](http://www.rexegg.com/regex-quickstart.html)
+- [MIT Cheat Sheet](http://web.mit.edu/hackl/www/lab/turkshop/slides/regex-cheatsheet.pdf)
+- [Java Cheat Sheet](https://zeroturnaround.com/rebellabs/java-regular-expressions-cheat-sheet/)
+- [JavaScript Cheat Sheet](https://www.debuggex.com/cheatsheet/regex/javascript)
+- [RegexLearn Cheat Sheet](https://regexlearn.com/cheatsheet)
+# Other awesome lists
+Other amazingly awesome lists can be found at the [official awesome list](https://github.com/sindresorhus/awesome) and [here](https://github.com/jnv/lists).
