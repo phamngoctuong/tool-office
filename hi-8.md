@@ -1,7 +1,7 @@
-`title: Awesome Regex
- description: A curated list of amazingly awesome regex resources.
- author: aloisdg
-`
+title: Awesome Regex
+description: A curated list of amazingly awesome regex resources.
+author: aloisdg
+tags: [Tag](http://stackoverflow.com/questions/25742396/creating-ctags-extension-for-markdown)
 #title: Awesome Regex
 ##title: Awesome Regex
 ###title: Awesome Regex
