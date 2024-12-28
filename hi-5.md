@@ -1,8 +1,8 @@
-<!--
+`{/*<!--
   Title: Awesome Regex
   Description: A curated list of amazingly awesome regex resources.
   Author: aloisdg
--->
+-->*/}`
 ## Introduction
 A curated collection of awesome Regex libraries, tools, frameworks and software. The goal is to build a categorized communitydriven collection of very wellknown resources.
 Inspired by [awesomedotnet](https://github.com/quozd/awesomedotnet), [awesomeruby](https://github.com/markets/awesomeruby), [awesomeawesomeness](https://github.com/bayandin/awesomeawesomeness) and the whole `awesome*` trend on GitHub. Thank you [Reddit](http://www.reddit.com/r/regex), [Hacker News](https://news.ycombinator.com/item?id=9581225) and [Stack Overflow](http://stackoverflow.com/tags/regex/info) for the help.
